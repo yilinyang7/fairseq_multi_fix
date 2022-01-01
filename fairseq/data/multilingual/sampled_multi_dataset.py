@@ -44,6 +44,7 @@ def default_virtual_size_func(datasets, ratios, max_scale_up=1.5):
 class CollateFormat(Enum):
     single = 1
     ordered_dict = 2
+    tgt_ordered_dict = 3
 
 
 class SampledMultiDataset(FairseqDataset):
@@ -95,6 +96,10 @@ class SampledMultiDataset(FairseqDataset):
             self.keys = list(range(len(datasets)))
         else:
             raise AssertionError()
+
+        if collate_format == CollateFormat.tgt_ordered_dict:
+            self.collate_map = [key.split('-')[-1] for key in self.keys]
+
         self.datasets = datasets
         self.split = split
 
@@ -253,7 +258,7 @@ class SampledMultiDataset(FairseqDataset):
         """Merge a list of samples to form a mini-batch."""
         if len(samples) == 0:
             return None
-        if self.collate_format == "ordered_dict":
+        if self.collate_format == CollateFormat.ordered_dict:
             collect_samples = [[] for _ in range(len(self.datasets))]
             for (i, sample) in samples:
                 collect_samples[i].append(sample)
@@ -264,6 +269,15 @@ class SampledMultiDataset(FairseqDataset):
                     if len(collect_samples[i]) > 0
                 ]
             )
+        elif self.collate_format == CollateFormat.tgt_ordered_dict:
+            collect_samples = defaultdict(list)
+            for i, sample in samples:
+                collect_samples[self.collate_map[i]].append(sample)
+
+            batch = {
+                key: self.datasets[0].collater(samples)
+                for key, samples in collect_samples.items()
+            }
         elif self.shared_collater:
             batch = self.datasets[0].collater([s for _, s in samples])
         else:
@@ -319,9 +333,9 @@ class SampledMultiDataset(FairseqDataset):
                 batch["net_input"]["prev_output_tokens"] = straight_order(
                     [b["net_input"]["prev_output_tokens"] for b in batches]
                 )
-            if "src_lang_id" in batches[0]["net_input"]:
-                batch["net_input"]["src_lang_id"] = straight_order(
-                    [b["net_input"]["src_lang_id"] for b in batches]
+            if "src_lang_id" in batches[0]:
+                batch["src_lang_id"] = straight_order(
+                    [b["src_lang_id"] for b in batches]
                 )
             if "tgt_lang_id" in batches[0]:
                 batch["tgt_lang_id"] = straight_order(

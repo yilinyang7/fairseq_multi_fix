@@ -384,16 +384,16 @@ class LanguagePairDataset(FairseqDataset):
             pad_to_length=pad_to_length,
             pad_to_multiple=self.pad_to_multiple,
         )
-        if self.src_lang_id is not None or self.tgt_lang_id is not None:
+        if len(res) and (self.src_lang_id is not None or self.tgt_lang_id is not None):
             src_tokens = res["net_input"]["src_tokens"]
             bsz = src_tokens.size(0)
             if self.src_lang_id is not None:
-                res["net_input"]["src_lang_id"] = (
-                    torch.LongTensor([[self.src_lang_id]]).expand(bsz, 1).to(src_tokens)
+                res["src_lang_id"] = (
+                    torch.LongTensor([[self.src_lang_id]]).expand(bsz, 1).to(src_tokens).clone()
                 )
             if self.tgt_lang_id is not None:
                 res["tgt_lang_id"] = (
-                    torch.LongTensor([[self.tgt_lang_id]]).expand(bsz, 1).to(src_tokens)
+                    torch.LongTensor([[self.tgt_lang_id]]).expand(bsz, 1).to(src_tokens).clone()
                 )
         return res
 

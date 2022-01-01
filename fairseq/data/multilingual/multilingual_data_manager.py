@@ -80,6 +80,10 @@ class MultilingualDatasetManager(object):
         self._has_sharded_data = False
         self._num_shards_dict = {}
         self._training_data_sizes = defaultdict(lambda: {})
+        if args.batch_by_target:
+            self.collate_format = CollateFormat.tgt_ordered_dict
+        else:
+            self.collate_format = CollateFormat.single
 
     @classmethod
     def setup_data_manager(cls, args, lang_pairs, langs, dicts, sampling_method):
@@ -196,7 +200,7 @@ class MultilingualDatasetManager(object):
             help="whether to include language IDs in samples",
         )
         parser.add_argument(
-            "--enable-reservsed-directions-shared-datasets",
+            "--enable-reversed-directions-shared-datasets",
             default=False,
             action="store_true",
             help="whether to allow datasets be used in reversed directions",
@@ -268,6 +272,11 @@ class MultilingualDatasetManager(object):
             help="virtual data size of the whole joint dataset to speed"
             "up data loading and have specific dynamic sampling strategy interval",
         )
+        parser.add_argument(
+            "--batch-by-target",
+            action="store_true",
+            help="whether to batch by the target language"
+        )
 
     @classmethod
     def load_langs(cls, args, **kwargs):
@@ -307,9 +316,8 @@ class MultilingualDatasetManager(object):
         )
 
     def _shared_collater(self):
-        return not (self.args.extra_data and "mono_dae" in self.args.extra_data) and (
-            not self.args.lang_tok_replacing_bos_eos
-        )
+        return not (self.args.extra_data and "mono_dae" in self.args.extra_data) \
+            and not self.args.lang_tok_replacing_bos_eos and len(self.args.lang_pairs) == 1
 
     def estimate_global_pass_epoch(self, epoch):
         if self.args.virtual_epoch_size is None or self.args.virtual_data_size is None:
@@ -833,7 +841,7 @@ class MultilingualDatasetManager(object):
     def load_split_langpair_datasets(self, split, data_param_list):
         datasets = []
         langpairs_sharing_datasets = (
-            {} if self.args.enable_reservsed_directions_shared_datasets else None
+            {} if self.args.enable_reversed_directions_shared_datasets else None
         )
         for param in data_param_list:
             ds = self.load_a_dataset(
@@ -1047,7 +1055,7 @@ class MultilingualDatasetManager(object):
             split, epoch, shard_epoch=shard_epoch
         )
         langpairs_sharing_datasets = (
-            {} if self.args.enable_reservsed_directions_shared_datasets else None
+            {} if self.args.enable_reversed_directions_shared_datasets else None
         )
         datasets = [
             (
@@ -1069,7 +1077,7 @@ class MultilingualDatasetManager(object):
                 OrderedDict(datasets),
                 sampling_ratios=None,
                 eval_key=None,
-                collate_format=CollateFormat.single,
+                collate_format=self.collate_format,
                 virtual_size=None,
                 split=split,
             )
@@ -1090,7 +1098,7 @@ class MultilingualDatasetManager(object):
                 # valid and test datasets will be degenerate to concating datasets:
                 sampling_ratios=sample_ratios,
                 eval_key=None,
-                collate_format=CollateFormat.single,
+                collate_format=self.collate_format,
                 virtual_size=self.args.virtual_data_size,
                 split=split,
                 virtual_epoch_size=self.args.virtual_epoch_size,
@@ -1114,7 +1122,7 @@ class MultilingualDatasetManager(object):
                 # valid and test datasets will be degerate to concating datasets:
                 sampling_ratios=sample_ratios,
                 eval_key=None,
-                collate_format=CollateFormat.single,
+                collate_format=self.collate_format,
                 virtual_size=self.args.virtual_data_size,
                 split=split,
                 # if not using lang_tok altering, simplified to use the same collater
@@ -1134,3 +1142,4 @@ class MultilingualDatasetManager(object):
             return self.load_sampled_multi_epoch_dataset(
                 split, training, epoch, combine, shard_epoch, **kwargs
             )
+

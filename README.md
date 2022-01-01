@@ -20,7 +20,7 @@ python scripts/rebuilt_opus_dataset.py $DOWNLOAD_DIR
 4. Move OPUS data into your desired location $DATA_DIR, and name files into {split}.{lang_pair}.{lang} format.
 ```
 mkdir -p ${DATA_DIR}/raw
-for lang in af am an ar as az be bg bn br bs ca cs cy da de dz el; do
+for lang in af am ar as az be bg bn br bs ca cs cy da de el; do
     cp ${DOWNLOAD_DIR}/opus-100-corpus/v1.0/supervised/${lang}-en/opus.${lang}-en-train-rebuilt.${lang} ${DATA_DIR}/raw/train.en-${lang}.${lang}
     cp ${DOWNLOAD_DIR}/opus-100-corpus/v1.0/supervised/${lang}-en/opus.${lang}-en-train-rebuilt.en ${DATA_DIR}/raw/train.en-${lang}.en
     cp ${DOWNLOAD_DIR}/opus-100-corpus/v1.0/supervised/${lang}-en/opus.${lang}-en-dev-rebuilt.${lang} ${DATA_DIR}/raw/valid.en-${lang}.${lang}
@@ -29,7 +29,7 @@ for lang in af am an ar as az be bg bn br bs ca cs cy da de dz el; do
     cp ${DOWNLOAD_DIR}/opus-100-corpus/v1.0/supervised/${lang}-en/opus.${lang}-en-test.en ${DATA_DIR}/raw/test.en-${lang}.en
 done
 
-for lang in eo es et eu fa fi fr fy ga gd gl gu ha he hi hr hu hy id ig is it ja ka kk km kn ko ku ky li lt lv mg mk ml mn mr ms mt my nb ne nl nn no oc or pa pl ps pt ro ru rw se sh si sk sl sq sr sv ta te tg th tk tr tt ug uk ur uz vi wa xh yi yo zh zu; do
+for lang in eo es et eu fa fi fr fy ga gd gl gu ha he hi hr hu id ig is it ja ka kk km kn ko ku ky li lt lv mg mk ml mr ms mt my nb ne nl nn no oc or pa pl ps pt ro ru rw se sh si sk sl sq sr sv ta te tg th tk tr tt ug uk ur uz vi wa xh yi zh zu; do
     cp ${DOWNLOAD_DIR}/opus-100-corpus/v1.0/supervised/en-${lang}/opus.en-${lang}-train-rebuilt.${lang} ${DATA_DIR}/raw/train.en-${lang}.${lang}
     cp ${DOWNLOAD_DIR}/opus-100-corpus/v1.0/supervised/en-${lang}/opus.en-${lang}-train-rebuilt.en ${DATA_DIR}/raw/train.en-${lang}.en
     cp ${DOWNLOAD_DIR}/opus-100-corpus/v1.0/supervised/en-${lang}/opus.en-${lang}-dev-rebuilt.${lang} ${DATA_DIR}/raw/valid.en-${lang}.${lang}
@@ -45,7 +45,7 @@ We use sentencepiece to tokenize the dataset:
 ```bash
 python scripts/spm_train.py --input=$(echo $(ls ${DATA_DIR}/raw/train*) | sed 's/ /;/g') --model_prefix=${DATA_DIR}/spm_64k --vocab_size=64000 --character_coverage=1.0 --input_sentence_size=1000000
 
-for lang in af am an ar as az be bg bn br bs ca cs cy da de dz el eo es et eu fa fi fr fy ga gd gl gu ha he hi hr hu hy id ig is it ja ka kk km kn ko ku ky li lt lv mg mk ml mn mr ms mt my nb ne nl nn no oc or pa pl ps pt ro ru rw se sh si sk sl sq sr sv ta te tg th tk tr tt ug uk ur uz vi wa xh yi yo zh zu; do
+for lang in af am ar as az be bg bn br bs ca cs cy da de el eo es et eu fa fi fr fy ga gd gl gu ha he hi hr hu id ig is it ja ka kk km kn ko ku ky li lt lv mg mk ml mr ms mt my nb ne nl nn no oc or pa pl ps pt ro ru rw se sh si sk sl sq sr sv ta te tg th tk tr tt ug uk ur uz vi wa xh yi zh zu; do
     python scripts/spm_encode.py --model ${DATA_DIR}/spm_64k.model --input ${DATA_DIR}/raw/train.en-${lang}.en --outputs ${DATA_DIR}/train.en-${lang}.en
     python scripts/spm_encode.py --model ${DATA_DIR}/spm_64k.model --input ${DATA_DIR}/raw/train.en-${lang}.${lang} --outputs ${DATA_DIR}/train.en-${lang}.${lang}
     python scripts/spm_encode.py --model ${DATA_DIR}/spm_64k.model --input ${DATA_DIR}/raw/valid.en-${lang}.en --outputs ${DATA_DIR}/valid.en-${lang}.en
@@ -55,7 +55,7 @@ done
 mkdir -p ${DATA_DIR}/data-bin
 cut -f 1 ${DATA_DIR}/spm_64k.vocab | tail -n +4 | sed "s/$/ 100/g" > ${DATA_DIR}/data-bin/dict.txt
 
-for lang in af am an ar as az be bg bn br bs ca cs cy da de dz el eo es et eu fa fi fr fy ga gd gl gu ha he hi hr hu hy id ig is it ja ka kk km kn ko ku ky li lt lv mg mk ml mn mr ms mt my nb ne nl nn no oc or pa pl ps pt ro ru rw se sh si sk sl sq sr sv ta te tg th tk tr tt ug uk ur uz vi wa xh yi yo zh zu; do
+for lang in af am ar as az be bg bn br bs ca cs cy da de el eo es et eu fa fi fr fy ga gd gl gu ha he hi hr hu id ig is it ja ka kk km kn ko ku ky li lt lv mg mk ml mr ms mt my nb ne nl nn no oc or pa pl ps pt ro ru rw se sh si sk sl sq sr sv ta te tg th tk tr tt ug uk ur uz vi wa xh yi zh zu; do
     python fairseq_cli/preprocess.py --task "translation" --source-lang $lang --target-lang en --trainpref ${DATA_DIR}/train.en-${lang} --validpref ${DATA_DIR}/valid.en-${lang} --destdir ${DATA_DIR}/data-bin --dataset-impl 'mmap' --padding-factor 1 --workers 32 --srcdict ${DATA_DIR}/data-bin/dict.txt --tgtdict ${DATA_DIR}/data-bin/dict.txt
 done
 ```

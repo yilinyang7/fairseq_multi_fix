@@ -19,7 +19,7 @@ python scripts/rebuilt_opus_dataset.py $DOWNLOAD_DIR
 ```
 4. Move OPUS data into your desired location $DATA_DIR, and name files into {split}.{lang_pair}.{lang} format.
 ```
-mkdir ${DATA_DIR}/raw
+mkdir -p ${DATA_DIR}/raw
 for lang in af am an ar as az be bg bn br bs ca cs cy da de dz el; do
     cp ${DOWNLOAD_DIR}/opus-100-corpus/v1.0/supervised/${lang}-en/opus.${lang}-en-train-rebuilt.${lang} ${DATA_DIR}/raw/train.en-${lang}.${lang}
     cp ${DOWNLOAD_DIR}/opus-100-corpus/v1.0/supervised/${lang}-en/opus.${lang}-en-train-rebuilt.en ${DATA_DIR}/raw/train.en-${lang}.en

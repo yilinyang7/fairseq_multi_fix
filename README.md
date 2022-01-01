@@ -43,7 +43,7 @@ done
 We use sentencepiece to tokenize the dataset:
 
 ```bash
-python scripts/spm_train.py --input=$(echo $(ls ${DATA_DIR}/raw/train*) | sed 's/ /;/g') --model_prefix=${DATA_DIR}/spm_64k --vocab_size=64000 --character_coverage=1.0 --input_sentence_size=1000000
+python scripts/spm_train.py --input=$(echo $(ls ${DATA_DIR}/raw/train*) | sed 's/ /,/g') --model_prefix=${DATA_DIR}/spm_64k --vocab_size=64000 --character_coverage=1.0 --input_sentence_size=1000000
 
 for lang in af am ar as az be bg bn br bs ca cs cy da de el eo es et eu fa fi fr fy ga gd gl gu ha he hi hr hu id ig is it ja ka kk km kn ko ku ky li lt lv mg mk ml mr ms mt my nb ne nl nn no oc or pa pl ps pt ro ru rw se sh si sk sl sq sr sv ta te tg th tk tr tt ug uk ur uz vi wa xh yi zh zu; do
     python scripts/spm_encode.py --model ${DATA_DIR}/spm_64k.model --input ${DATA_DIR}/raw/train.en-${lang}.en --outputs ${DATA_DIR}/train.en-${lang}.en

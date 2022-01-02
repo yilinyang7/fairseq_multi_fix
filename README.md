@@ -10,14 +10,17 @@ This release includes:
 * Implementation of on-the-fly oracle gradient de-confliction (i.e. TGP)
 
 ## Rebuilt OPUS-100 dataset 
-1. First download the original [OPUS-100 V1.0 dataset](https://object.pouta.csc.fi/OPUS-100/v1.0/opus-100-corpus-v1.0.tar.gz) 
-2. Run "tar xf opus-100-corpus-v1.0.tar.gz" to extract the tarball into your desired directory $DOWNLOAD_DIR
-3. Run below script to de-duplicate the supervised dataset and re-sample the zeroshot dev set. 
-(This script would take 3~4 hours to finish, and feel free to purge "$DOWNLOAD_DIR/opus-100-corpus/v1.0/zero-shot/??-??/downloaded" after finished, which includes all the downloaded zero-shot corpus from OPUS.)
+Run this script:
 ```python
 python scripts/rebuilt_opus_dataset.py $DOWNLOAD_DIR
 ```
-4. Move OPUS data into your desired location $DATA_DIR, and name files into {split}.{lang_pair}.{lang} format.
+Above "rebuilt_opus_dataset.py" script does the following steps:
+1. First it downloads the original [OPUS-100 V1.0 dataset](https://object.pouta.csc.fi/OPUS-100/v1.0/opus-100-corpus-v1.0.tar.gz) 
+2. Then, it runs "tar xf opus-100-corpus-v1.0.tar.gz" to extract the tarball into your desired directory $DOWNLOAD_DIR
+3. It also de-duplicates the supervised dataset and re-samples the zeroshot dev set. 
+(This step would take 3~4 hours to finish, and feel free to purge "$DOWNLOAD_DIR/opus-100-corpus/v1.0/zero-shot/??-??/downloaded" after finished, which includes all the downloaded zero-shot corpus from OPUS.)
+
+Run following bash commands, which move OPUS data into your desired location $DATA_DIR, and name files into {split}.{lang_pair}.{lang} format.
 ```
 mkdir -p ${DATA_DIR}/raw
 for lang in af am ar as az be bg bn br bs ca cs cy da de el; do
@@ -40,8 +43,8 @@ done
 ```
 
 ## Pre-processing Supervised Data
-We use sentencepiece to tokenize the dataset:
-
+We use the sentencepiece to tokenize the dataset.
+Following commands run spm_train, spm_encode, and Fairseq preprocessing steps:
 ```bash
 python scripts/spm_train.py --input=$(echo $(ls ${DATA_DIR}/raw/train*) | sed 's/ /,/g') --model_prefix=${DATA_DIR}/spm_64k --vocab_size=64000 --character_coverage=1.0 --input_sentence_size=1000000
 
@@ -64,6 +67,7 @@ done
 ```
 
 ## Pre-processing Zero-shot data
+Follow steps extracted the re-sampled zeroshot dev set as well as original test set:
 ```bash
 for lpair in de-nl nl-zh ar-nl ru-zh fr-nl de-fr fr-zh ar-ru ar-zh ar-fr de-zh fr-ru de-ru nl-ru ar-de; do
     TMP=(${lpair//-/ })
@@ -77,6 +81,7 @@ done
 ```
 
 ## Pre-processing Oracle data
+Following steps build the oracle data, with a 80-20 split into oracle set (for oracle gradients) and validation set (for checkpoint selection):
 ```bash
 for lang in af am ar as az be bg bn br bs ca cs cy da de el eo es et eu fa fi fr fy ga gd gl gu ha he hi hr hu id ig is it ja ka kk km kn ko ku ky li lt lv mg mk ml mr ms mt my nb ne nl nn no oc or pa pl ps pt ro ru rw se sh si sk sl sq sr sv ta te tg th tk tr tt ug uk ur uz vi wa xh yi zh zu; do
     cat ${DATA_DIR}/valid.en-${lang}.en >> ${DATA_DIR}/oracle_data.en 

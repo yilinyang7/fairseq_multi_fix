@@ -15,11 +15,11 @@ Run this script:
 python scripts/rebuilt_opus_dataset.py $DOWNLOAD_DIR
 ```
 Above "rebuilt_opus_dataset.py" script does the following steps:
-1. First it downloads and unzip the original [OPUS-100 V1.0 dataset](https://object.pouta.csc.fi/OPUS-100/v1.0/opus-100-corpus-v1.0.tar.gz) into your desired directory $DOWNLOAD_DIR
+1. First it downloads and unzips the original [OPUS-100 V1.0 dataset](https://object.pouta.csc.fi/OPUS-100/v1.0/opus-100-corpus-v1.0.tar.gz) into your desired directory $DOWNLOAD_DIR
 2. Then it de-duplicates the supervised dataset and re-samples the zeroshot dev set. 
 (This step would take 3~4 hours to finish, and feel free to purge "$DOWNLOAD_DIR/opus-100-corpus/v1.0/zero-shot/??-??/downloaded" after finished, which includes all the downloaded zero-shot corpus from OPUS.)
 
-Run following bash commands, which move OPUS data into your desired location $DATA_DIR, and name files into {split}.{lang_pair}.{lang} format.
+Then, run following bash commands, which move OPUS data into your desired location $DATA_DIR, and name files into {split}.{lang_pair}.{lang} format.
 ```
 mkdir -p ${DATA_DIR}/raw
 for lang in af am ar as az be bg bn br bs ca cs cy da de el; do
@@ -42,7 +42,7 @@ done
 ```
 
 ## Pre-processing Supervised Data
-We use the sentencepiece to tokenize the dataset.
+We use sentencepiece to tokenize the dataset.
 Following commands run spm_train, spm_encode, and Fairseq preprocessing steps:
 ```bash
 python scripts/spm_train.py --input=$(echo $(ls ${DATA_DIR}/raw/train*) | sed 's/ /,/g') --model_prefix=${DATA_DIR}/spm_64k --vocab_size=64000 --character_coverage=1.0 --input_sentence_size=1000000

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import sys
 import os
@@ -67,7 +67,7 @@ if __name__ == "__main__":
         test_src =  lpair_dir / f"opus.{lpair}-test.{src}"
         test_tgt =  lpair_dir / f"opus.{lpair}-test.{tgt}"
         with open(test_src) as src_file, open(test_tgt) as tgt_file:
-            test_data = list(zip(src_file.readlines(), tgt_file.readlines()))
+            test_data = list(zip(src_file, tgt_file))
             test_length = len(test_data)
             test_data = set(test_data)
         logger.info(
@@ -78,7 +78,7 @@ if __name__ == "__main__":
         valid_src =  lpair_dir / f"opus.{lpair}-dev.{src}"
         valid_tgt =  lpair_dir / f"opus.{lpair}-dev.{tgt}"
         with open(valid_src) as src_file, open(valid_tgt) as tgt_file:
-            valid_data = list(zip(src_file.readlines(), tgt_file.readlines()))
+            valid_data = list(zip(src_file, tgt_file))
             valid_length = len(valid_data)
             valid_data = list(set(valid_data) - test_data)
         logger.info(
@@ -89,7 +89,7 @@ if __name__ == "__main__":
         train_src =  lpair_dir / f"opus.{lpair}-train.{src}"
         train_tgt =  lpair_dir / f"opus.{lpair}-train.{tgt}"
         with open(train_src) as src_file, open(train_tgt) as tgt_file:
-            tmp_data = set(zip(src_file.readlines(), tgt_file.readlines()))
+            tmp_data = set(zip(src_file, tgt_file))
             train_data = list(tmp_data - test_data)
         logger.info(
             f"{lpair} | train data before de-duplicate: {len(tmp_data)}; "

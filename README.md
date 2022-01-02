@@ -125,7 +125,7 @@ python train.py $DATA_DIR --arch transformer_vaswani_wmt_en_de_big \
 ```
 
 ## TLP algorithm
-To replicate our results:
+Similarly, we train TLP model with 16 gradient accumulation steps on 8 V100 gpus:
 ```bash
 python train.py $DATA_DIR --arch transformer_langid_pred_vaswani_wmt_en_de_big \
     --encoder-normalize-before --decoder-normalize-before --layernorm-embedding \
@@ -144,7 +144,11 @@ python train.py $DATA_DIR --arch transformer_langid_pred_vaswani_wmt_en_de_big \
 ```
 
 ## TGP algorithm
-To replicate our results:
+To speedup TGP training, we first re-batch training samples and grouped by their target languages. 
+We further merge training batches that consist of only English-centric dev sets, since it empirically
+obtains similar performance while exhibiting noticeable speedups 
+(if we don't do this step, the training process could be challenging for CPU memories, since we are saving on-the-fly oracle gradients.).
+
 ```bash
 python train.py $DATA_DIR --arch transformer_vaswani_wmt_en_de_big \
     --encoder-normalize-before --decoder-normalize-before --layernorm-embedding \
@@ -167,7 +171,7 @@ python train.py $DATA_DIR --arch transformer_vaswani_wmt_en_de_big \
 
 
 ## Citation
-If you find this repository helpful, please cite us:
+If you find this repository helpful, please cite us, thanks!
 ```bibtex
 @inproceedings{yang2021improving,
   title={Improving Multilingual Translation by Representation and Gradient Regularization},

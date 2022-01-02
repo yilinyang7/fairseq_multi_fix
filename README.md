@@ -51,7 +51,9 @@ for lang in af am ar as az be bg bn br bs ca cs cy da de el eo es et eu fa fi fr
     python scripts/spm_encode.py --model ${DATA_DIR}/spm_64k.model --input ${DATA_DIR}/raw/train.en-${lang}.en --outputs ${DATA_DIR}/train.en-${lang}.en
     python scripts/spm_encode.py --model ${DATA_DIR}/spm_64k.model --input ${DATA_DIR}/raw/train.en-${lang}.${lang} --outputs ${DATA_DIR}/train.en-${lang}.${lang}
     python scripts/spm_encode.py --model ${DATA_DIR}/spm_64k.model --input ${DATA_DIR}/raw/valid.en-${lang}.en --outputs ${DATA_DIR}/valid.en-${lang}.en
-    python scripts/spm_encode.py --model ${DATA_DIR}/spm_64k.model --input ${DATA_DIR}/raw/valid.en-${lang}.${lang} --outputs ${DATA_DIR}/valid.en-${lang}.${lang}
+    python scripts/spm_encode.py --model ${DATA_DIR}/spm_64k.model --input ${DATA_DIR}/raw/valid.en-${lang}.${lang} --outputs ${DATA_DIR}/valid.en-${lang}.${lang}    
+    python scripts/spm_encode.py --model ${DATA_DIR}/spm_64k.model --input ${DATA_DIR}/raw/test.en-${lang}.en --outputs ${DATA_DIR}/test.en-${lang}.en
+    python scripts/spm_encode.py --model ${DATA_DIR}/spm_64k.model --input ${DATA_DIR}/raw/test.en-${lang}.${lang} --outputs ${DATA_DIR}/test.en-${lang}.${lang}
 done
 
 mkdir -p ${DATA_DIR}/data-bin
@@ -66,7 +68,7 @@ done
 ```
 
 ## Pre-processing Zero-shot data
-Follow steps extracted the re-sampled zeroshot dev set as well as original test set:
+Follow steps extracte and spm_encode the re-sampled zeroshot dev set as well as original test set:
 ```bash
 for lpair in de-nl nl-zh ar-nl ru-zh fr-nl de-fr fr-zh ar-ru ar-zh ar-fr de-zh fr-ru de-ru nl-ru ar-de; do
     TMP=(${lpair//-/ })
@@ -76,6 +78,10 @@ for lpair in de-nl nl-zh ar-nl ru-zh fr-nl de-fr fr-zh ar-ru ar-zh ar-fr de-zh f
     cp ${DOWNLOAD_DIR}/opus-100-corpus/v1.0/zero-shot/${SRC}-${TGT}/opus.${SRC}-${TGT}-dev.${TGT} ${DATA_DIR}/raw/valid.${SRC}-${TGT}.${TGT}
     cp ${DOWNLOAD_DIR}/opus-100-corpus/v1.0/zero-shot/${SRC}-${TGT}/opus.${SRC}-${TGT}-test.${SRC} ${DATA_DIR}/raw/test.${SRC}-${TGT}.${SRC}
     cp ${DOWNLOAD_DIR}/opus-100-corpus/v1.0/zero-shot/${SRC}-${TGT}/opus.${SRC}-${TGT}-test.${TGT} ${DATA_DIR}/raw/test.${SRC}-${TGT}.${TGT}
+    python scripts/spm_encode.py --model ${DATA_DIR}/spm_64k.model --input ${DATA_DIR}/raw/valid.${SRC}-${TGT}.${TGT} --outputs ${DATA_DIR}/valid.${SRC}-${TGT}.${TGT}
+    python scripts/spm_encode.py --model ${DATA_DIR}/spm_64k.model --input ${DATA_DIR}/raw/valid.${SRC}-${TGT}.${SRC} --outputs ${DATA_DIR}/valid.${SRC}-${TGT}.${SRC}
+    python scripts/spm_encode.py --model ${DATA_DIR}/spm_64k.model --input ${DATA_DIR}/raw/test.${SRC}-${TGT}.${SRC} --outputs ${DATA_DIR}/test.${SRC}-${TGT}.${SRC}
+    python scripts/spm_encode.py --model ${DATA_DIR}/spm_64k.model --input ${DATA_DIR}/raw/test.${SRC}-${TGT}.${TGT} --outputs ${DATA_DIR}/test.${SRC}-${TGT}.${TGT}
 done
 ```
 
@@ -173,6 +179,27 @@ python train.py $DATA_DIR --arch transformer_vaswani_wmt_en_de_big \
     --tgp-max-tokens 4096 --max-tokens-valid 4096 |& tee checkpoints/opus_tgp/train.log
 ```
 
+## Inference and Evaluation
+We use "fairseq_cli/interactive.py" for inference and sacrebleu for evaluation (following example works for De->Fr):
+```bash
+SRC=de
+TGT=fr
+FSRC=${DATA_DIR}/test.${SRC}-${TGT}.${SRC}
+FTGT=${DATA_DIR}/raw/test.${SRC}-${TGT}.${TGT}
+FOUT=${MODEL_PATH}_trans/test.${SRC}-${TGT}.${TGT}
+mkdir ${MODEL_PATH}_trans
+
+cat $FSRC | python scripts/truncate.py | \
+python fairseq_cli/interactive.py ${DATA_DIR}/data-bin \
+    --task translation_multi_simple_epoch --encoder-langtok tgt --path $MODEL_PATH \
+    --langs af,am,ar,as,az,be,bg,bn,br,bs,ca,cs,cy,da,de,el,en,eo,es,et,eu,fa,fi,fr,fy,ga,gd,gl,gu,ha,he,hi,hr,hu,id,ig,is,it,ja,ka,kk,km,kn,ko,ku,ky,li,lt,lv,mg,mk,ml,mr,ms,mt,my,nb,ne,nl,nn,no,oc,or,pa,pl,ps,pt,ro,ru,rw,se,sh,si,sk,sl,sq,sr,sv,ta,te,tg,th,tk,tr,tt,ug,uk,ur,uz,vi,wa,xh,yi,zh,zu \
+    --lang-pairs es-en,en-es,fr-en,en-fr,ro-en,en-ro,nl-en,en-nl,cs-en,en-cs,el-en,en-el,hu-en,en-hu,pl-en,en-pl,tr-en,en-tr,pt-en,en-pt,bg-en,en-bg,it-en,en-it,fi-en,en-fi,hr-en,en-hr,ar-en,en-ar,sr-en,en-sr,he-en,en-he,de-en,en-de,sl-en,en-sl,ru-en,en-ru,sv-en,en-sv,da-en,en-da,et-en,en-et,bs-en,en-bs,sk-en,en-sk,id-en,en-id,no-en,en-no,fa-en,en-fa,lt-en,en-lt,zh-en,en-zh,lv-en,en-lv,mk-en,en-mk,vi-en,en-vi,th-en,en-th,ja-en,en-ja,sq-en,en-sq,ms-en,en-ms,is-en,en-is,ko-en,en-ko,uk-en,en-uk,ca-en,en-ca,eu-en,en-eu,mt-en,en-mt,gl-en,en-gl,ml-en,en-ml,bn-en,en-bn,pa-en,en-pa,hi-en,en-hi,ta-en,en-ta,si-en,en-si,nb-en,en-nb,nn-en,en-nn,te-en,en-te,gu-en,en-gu,mr-en,en-mr,ne-en,en-ne,kn-en,en-kn,or-en,en-or,as-en,en-as,ka-en,en-ka,be-en,en-be,eo-en,en-eo,cy-en,en-cy,ga-en,en-ga,ug-en,en-ug,az-en,en-az,xh-en,en-xh,af-en,en-af,oc-en,en-oc,br-en,en-br,rw-en,en-rw,km-en,en-km,ku-en,en-ku,wa-en,en-wa,mg-en,en-mg,kk-en,en-kk,tg-en,en-tg,am-en,en-am,ps-en,en-ps,my-en,en-my,uz-en,en-uz,ur-en,en-ur,ky-en,en-ky,gd-en,en-gd,sh-en,en-sh,li-en,en-li,zu-en,en-zu,fy-en,en-fy,tk-en,en-tk,yi-en,en-yi,tt-en,en-tt,se-en,en-se,ha-en,en-ha,ig-en,en-ig \
+    --source-lang $SRC --target-lang $TGT --buffer-size 1024 --batch-size 100 \
+    --beam 5 --lenpen 1.0 --remove-bpe=sentencepiece --no-progress-bar | \
+grep -P "^H" | cut -f 3- > $FOUT
+
+cat $FOUT | python scripts/sacrebleu.py $FTGT | grep "BLEU"
+```
 
 ## Citation
 If you find this repository helpful, please cite us, thanks!

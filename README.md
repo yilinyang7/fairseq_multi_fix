@@ -15,9 +15,8 @@ Run this script:
 python scripts/rebuilt_opus_dataset.py $DOWNLOAD_DIR
 ```
 Above "rebuilt_opus_dataset.py" script does the following steps:
-1. First it downloads the original [OPUS-100 V1.0 dataset](https://object.pouta.csc.fi/OPUS-100/v1.0/opus-100-corpus-v1.0.tar.gz) 
-2. Then, it runs "tar xf opus-100-corpus-v1.0.tar.gz" to extract the tarball into your desired directory $DOWNLOAD_DIR
-3. It also de-duplicates the supervised dataset and re-samples the zeroshot dev set. 
+1. First it downloads and unzip the original [OPUS-100 V1.0 dataset](https://object.pouta.csc.fi/OPUS-100/v1.0/opus-100-corpus-v1.0.tar.gz) into your desired directory $DOWNLOAD_DIR
+2. Then it de-duplicates the supervised dataset and re-samples the zeroshot dev set. 
 (This step would take 3~4 hours to finish, and feel free to purge "$DOWNLOAD_DIR/opus-100-corpus/v1.0/zero-shot/??-??/downloaded" after finished, which includes all the downloaded zero-shot corpus from OPUS.)
 
 Run following bash commands, which move OPUS data into your desired location $DATA_DIR, and name files into {split}.{lang_pair}.{lang} format.

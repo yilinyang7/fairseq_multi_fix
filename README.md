@@ -2,7 +2,7 @@
 
 ## Introduction
 This repo is a re-implementation of [Improving Multilingual Translation by Representation and Gradient Regularization](https://arxiv.org/abs/2109.04778) on the new [Fairseq](https://github.com/pytorch/fairseq) codebase. 
-Compared to my old codebase, this version is significantly faster while results (BLEU score) are largely the same.
+Compared to my old codebase, this version is significantly faster while results (i.e. BLEU score) are largely the same.
 
 This release includes:
 * A rebuilt OPUS-100 dataset 
@@ -10,7 +10,7 @@ This release includes:
 * Implementation of on-the-fly oracle gradient de-confliction (i.e. TGP)
 
 ## Rebuilt OPUS-100 dataset 
-Run this script:
+First, run this script:
 ```python
 python scripts/rebuilt_opus_dataset.py $DOWNLOAD_DIR
 ```
@@ -19,7 +19,7 @@ Above "rebuilt_opus_dataset.py" script does the following steps:
 2. Then it de-duplicates the supervised dataset and re-samples the zeroshot dev set. 
 (This step would take 3~4 hours to finish, and feel free to purge "$DOWNLOAD_DIR/opus-100-corpus/v1.0/zero-shot/??-??/downloaded" after finished, which includes all the downloaded zero-shot corpus from OPUS.)
 
-Then, run following bash commands, which move OPUS data into your desired location $DATA_DIR, and name files into {split}.{lang_pair}.{lang} format.
+Then, run the following bash commands, which move OPUS data into your desired location $DATA_DIR, and name files into {split}.{lang_pair}.{lang} format.
 ```
 mkdir -p ${DATA_DIR}/raw
 for lang in af am ar as az be bg bn br bs ca cs cy da de el; do
@@ -68,7 +68,7 @@ done
 ```
 
 ## Pre-processing Zero-shot data
-Follow steps extracte and spm_encode the re-sampled zeroshot dev set as well as original test set:
+Following steps extract and spm_encode the re-sampled zeroshot dev set as well as the original test set:
 ```bash
 for lpair in de-nl nl-zh ar-nl ru-zh fr-nl de-fr fr-zh ar-ru ar-zh ar-fr de-zh fr-ru de-ru nl-ru ar-de; do
     TMP=(${lpair//-/ })
@@ -105,6 +105,7 @@ for lpair in de-nl nl-zh ar-nl ru-zh fr-nl de-fr fr-zh ar-ru ar-zh ar-fr de-zh f
     cat ${DATA_DIR}/raw/valid.${SRC}-${TGT}.${TGT} >> ${DATA_DIR}/oracle_data.${TGT}
 done
 
+# "split_oracle_data.py" does the 80-20 random split
 python scripts/split_oracle_data.py ${DATA_DIR}/oracle_data
 
 for lang in af am ar as az be bg bn br bs ca cs cy da de el eo es et eu fa fi fr fy ga gd gl gu ha he hi hr hu id ig is it ja ka kk km kn ko ku ky li lt lv mg mk ml mr ms mt my nb ne nl nn no oc or pa pl ps pt ro ru rw se sh si sk sl sq sr sv ta te tg th tk tr tt ug uk ur uz vi wa xh yi zh zu; do
@@ -116,7 +117,7 @@ done
 ```
 
 ## Baseline model
-To replicate our results, we train our model on 8 V100 gpus with 16 gradient accumulation steps to simulate training on 128 V100 gpus:
+To replicate our results, we train our model on 8 V100 gpus with 16 gradient accumulation steps to simulate the training on 128 V100 gpus:
 ```bash
 python train.py $DATA_DIR --arch transformer_vaswani_wmt_en_de_big \
     --encoder-normalize-before --decoder-normalize-before --layernorm-embedding \

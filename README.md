@@ -120,7 +120,6 @@ done
 To replicate our results, we train our model on 8 V100 gpus with 16 gradient accumulation steps to simulate the training on 128 V100 gpus:
 ```bash
 python train.py $DATA_DIR --arch transformer_vaswani_wmt_en_de_big \
-    --encoder-normalize-before --decoder-normalize-before --layernorm-embedding \
     --task translation_multi_simple_epoch --sampling-method "temperature" \
     --sampling-temperature 5 --encoder-langtok "tgt" \
     --langs "af,am,ar,as,az,be,bg,bn,br,bs,ca,cs,cy,da,de,el,en,eo,es,et,eu,fa,fi,fr,fy,ga,gd,gl,gu,ha,he,hi,hr,hu,id,ig,is,it,ja,ka,kk,km,kn,ko,ku,ky,li,lt,lv,mg,mk,ml,mr,ms,mt,my,nb,ne,nl,nn,no,oc,or,pa,pl,ps,pt,ro,ru,rw,se,sh,si,sk,sl,sq,sr,sv,ta,te,tg,th,tk,tr,tt,ug,uk,ur,uz,vi,wa,xh,yi,zh,zu" \
@@ -139,7 +138,6 @@ python train.py $DATA_DIR --arch transformer_vaswani_wmt_en_de_big \
 Similarly, we train TLP model with 16 gradient accumulation steps on 8 V100 gpus:
 ```bash
 python train.py $DATA_DIR --arch transformer_langid_pred_vaswani_wmt_en_de_big \
-    --encoder-normalize-before --decoder-normalize-before --layernorm-embedding \
     --task translation_multi_simple_epoch --sampling-method "temperature" \
     --sampling-temperature 5 --encoder-langtok "tgt" \
     --langs "af,am,ar,as,az,be,bg,bn,br,bs,ca,cs,cy,da,de,el,en,eo,es,et,eu,fa,fi,fr,fy,ga,gd,gl,gu,ha,he,hi,hr,hu,id,ig,is,it,ja,ka,kk,km,kn,ko,ku,ky,li,lt,lv,mg,mk,ml,mr,ms,mt,my,nb,ne,nl,nn,no,oc,or,pa,pl,ps,pt,ro,ru,rw,se,sh,si,sk,sl,sq,sr,sv,ta,te,tg,th,tk,tr,tt,ug,uk,ur,uz,vi,wa,xh,yi,zh,zu" \
@@ -162,7 +160,6 @@ obtains similar performance while exhibiting noticeable speedups
 
 ```bash
 python train.py $DATA_DIR --arch transformer_vaswani_wmt_en_de_big \
-    --encoder-normalize-before --decoder-normalize-before --layernorm-embedding \
     --task translation_multi_tgp --sampling-method "temperature" \
     --sampling-temperature 5 --encoder-langtok "tgt" \
     --langs "af,am,ar,as,az,be,bg,bn,br,bs,ca,cs,cy,da,de,el,en,eo,es,et,eu,fa,fi,fr,fy,ga,gd,gl,gu,ha,he,hi,hr,hu,id,ig,is,it,ja,ka,kk,km,kn,ko,ku,ky,li,lt,lv,mg,mk,ml,mr,ms,mt,my,nb,ne,nl,nn,no,oc,or,pa,pl,ps,pt,ro,ru,rw,se,sh,si,sk,sl,sq,sr,sv,ta,te,tg,th,tk,tr,tt,ug,uk,ur,uz,vi,wa,xh,yi,zh,zu" \

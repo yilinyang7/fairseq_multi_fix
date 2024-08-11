@@ -204,6 +204,7 @@ def main(cfg: FairseqConfig):
     logger.info("NOTE: hypothesis and token scores are output in base 2")
     logger.info("Type the input sentence and press return:")
     start_id = 0
+    off_tgts = []
     for inputs in buffered_read(cfg.interactive.input, cfg.interactive.buffer_size):
         results = []
         for batch in make_batches(inputs, cfg, task, max_positions, encode_fn):
@@ -227,6 +228,9 @@ def main(cfg: FairseqConfig):
             translations = task.inference_step(
                 generator, models, sample, constraints=constraints
             )
+            if cfg.task.eval_langid:
+                off_tgts += [hypo[0]['off_tgt'] for hypo in translations]
+
             translate_time = time.time() - translate_start_time
             total_translate_time += translate_time
             list_constraints = [[] for _ in range(bsz)]
@@ -295,9 +299,14 @@ def main(cfg: FairseqConfig):
                         ["{}-{}".format(src, tgt) for src, tgt in alignment]
                     )
                     print("A-{}\t{}".format(id_, alignment_str))
+                if cfg.task.eval_langid:
+                    print(f"LID-{id}\t{hypo['langid_prob']}")
 
         # update running id_ counter
         start_id += len(inputs)
+
+    if cfg.task.eval_langid:
+        print(f"| Avg off-target rates {sum(off_tgts) / len(off_tgts)}")
 
     logger.info(
         "Total time: {:.3f} seconds; translation time: {:.3f}".format(

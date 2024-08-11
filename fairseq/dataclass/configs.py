@@ -920,6 +920,51 @@ class GenerationConfig(FairseqDataclass):
         default=False,
         metadata={"help": "if set, dont use seed for initializing random generators"},
     )
+    # Language-informed beam search
+    eval_langid: bool = field(
+        default=False,
+        metadata={"help": "if set, it'll evaluate language generation by a langid model"},
+    )
+    langid_beam: bool = field(
+        default=False,
+        metadata={"help": "if set, beam search will use langid score in each step"},
+    )
+    langid_rerank: bool = field(
+        default=False,
+        metadata={"help": "if set, beam search will rerank candidate after search"},
+    )
+    langid_beam_k: int = field(
+        default=2,
+        metadata={"help": "only use top-k candidate for langid scoring"},
+    )
+    langid_coef: float = field(
+        default=0.,
+        metadata={"help": "the linear coefficent for langid score"},
+    )
+    langid_multiprocess: bool = field(
+        default=False,
+        metadata={"help": "if set, will leverage multiprocess to run langid model"},
+    )
+    langid_modeldir: Optional[str] = field(
+        default=None,
+        metadata={"help": "the path to the langid model"},
+    )
+    post_process: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": (
+                "post-process text by removing BPE, letter segmentation, etc. "
+                "Valid options can be found in fairseq.data.utils.post_process."
+            ),
+            "argparse_const": "subword_nmt",
+        },
+    )
+    lid_target_lang: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": "target language",
+        },
+    )
 
 
 @dataclass

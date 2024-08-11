@@ -6,14 +6,32 @@
 import math
 from typing import Dict, List, Optional
 import sys
+from collections import defaultdict
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from fairseq import search, utils
 from fairseq.data import data_utils
 from fairseq.models import FairseqIncrementalDecoder
 from torch import Tensor
 from fairseq.ngram_repeat_block import NGramRepeatBlock
+import fasttext
+import multiprocessing
+import time
+
+
+def initializer(func, args, tgt_dict):
+    func.args = args
+    func.tgt_dict = tgt_dict
+    func.langid_model = fasttext.load_model(args.langid_modeldir)
+
+
+def unbpe(token):
+    b_str = unbpe.tgt_dict.string(token, unbpe.args.post_process)
+    fasttext_pred = unbpe.langid_model.predict(b_str, 1 << 9)
+    lang_prob = defaultdict(float, zip(*fasttext_pred))
+    return lang_prob[f"__label__{unbpe.args.lid_target_lang}"] + 1e-6
 
 
 class SequenceGenerator(nn.Module):
@@ -21,6 +39,7 @@ class SequenceGenerator(nn.Module):
         self,
         models,
         tgt_dict,
+        args=None,
         beam_size=1,
         max_len_a=0,
         max_len_b=200,
@@ -68,6 +87,7 @@ class SequenceGenerator(nn.Module):
         else:
             self.model = EnsembleModel(models)
         self.tgt_dict = tgt_dict
+        self.args = args
         self.pad = tgt_dict.pad()
         self.unk = tgt_dict.unk()
         self.eos = tgt_dict.eos() if eos is None else eos
@@ -114,6 +134,19 @@ class SequenceGenerator(nn.Module):
         self.lm_weight = lm_weight
         if self.lm_model is not None:
             self.lm_model.eval()
+
+        # initialize LiBS
+        if args.eval_langid or args.langid_coef > 0.:
+            self.langid_model = fasttext.load_model(args.langid_modeldir)
+            if args.langid_beam:
+                if args.langid_multiprocess:
+                    self.pool = multiprocessing.Pool(
+                        multiprocessing.cpu_count() // 2,
+                        initializer=initializer,
+                        initargs=(unbpe, args, tgt_dict)
+                    )
+                else:
+                    unbpe.args, unbpe.tgt_dict, unbpe.langid_model = args, tgt_dict, self.langid_model
 
     def cuda(self):
         self.model.cuda()
@@ -388,14 +421,32 @@ class SequenceGenerator(nn.Module):
             if self.repeat_ngram_blocker is not None:
                 lprobs = self.repeat_ngram_blocker(tokens, lprobs, bsz, beam_size, step)
 
-            # Shape: (batch, cand_size)
-            cand_scores, cand_indices, cand_beams = self.search.step(
-                step,
-                lprobs.view(bsz, -1, self.vocab_size),
-                scores.view(bsz, beam_size, -1)[:, :, :step],
-                tokens[:, : step + 1],
-                original_batch_idxs,
-            )
+            if step >= 1 and self.args.langid_beam:
+                lprobs.add_(scores[:, step - 1].unsqueeze(-1))
+                topk_score, topk_indices = torch.topk(lprobs.view(bsz, beam_size, -1), k=self.args.langid_beam_k)
+                topk_tokens = tokens[:, :step + 1].repeat_interleave(self.args.langid_beam_k, dim=0)
+                topk_tokens = torch.cat([topk_tokens, topk_indices.view(-1, 1)], dim=-1)
+
+                if self.args.langid_multiprocess:
+                    topk_prob = self.pool.map(unbpe, topk_tokens.cpu())
+                else:
+                    topk_prob = list(map(unbpe, topk_tokens.cpu()))
+                topk_lprob = scores.new(topk_prob).log().view_as(topk_score)
+                topk_scores = topk_score + self.args.langid_coef * topk_lprob
+                _, k_indices = torch.topk(topk_scores.view(bsz, -1), k=cand_size)
+
+                cand_scores = topk_score.view(bsz, -1).gather(-1, k_indices)
+                cand_indices = topk_indices.view(bsz, -1).gather(-1, k_indices)
+                cand_beams = k_indices // self.args.langid_beam_k
+            else:
+                # Shape: (batch, cand_size)
+                cand_scores, cand_indices, cand_beams = self.search.step(
+                    step,
+                    lprobs.view(bsz, -1, self.vocab_size),
+                    scores.view(bsz, beam_size, -1)[:, :, :step],
+                    tokens[:, : step + 1],
+                    original_batch_idxs,
+                )
 
             # cand_bbsz_idx contains beam indices for the top candidate
             # hypotheses, with a range of values: [0, bsz*beam_size),
@@ -547,6 +598,24 @@ class SequenceGenerator(nn.Module):
 
             # reorder incremental state in decoder
             reorder_state = active_bbsz_idx
+
+        # add langid annotation
+        if self.args.eval_langid:
+            for i, batch in enumerate(finalized):
+                for b in batch:
+                    b_str = self.tgt_dict.string(b['tokens'], self.args.post_process)
+                    fasttext_pred = self.langid_model.predict(b_str, 1 << 9)
+                    lang_prob = defaultdict(float, zip(*fasttext_pred))
+                    b['langid_prob'] = lang_prob[f"__label__{self.args.lid_target_lang}"]
+                    b['off_tgt'] = fasttext_pred[0][0] != f"__label__{self.args.lid_target_lang}"
+
+        if self.args.langid_rerank:
+            for i, batch in enumerate(finalized):
+                probs = scores.new([s['score'] for s in batch])
+                langid_prob = probs.new([b['langid_prob'] for b in batch]).log()
+                probs = (self.args.langid_coef * langid_prob + probs).cpu()
+                for ib, b in enumerate(batch):
+                    b['score'] = probs[ib]
 
         # sort by score descending
         for sent in range(len(finalized)):

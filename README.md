@@ -1,9 +1,9 @@
 # Improving Multilingual Translation by Representation and Gradient Regularization
 
 ## Introduction
-This repo has an implementation of Language-informed Beam Search (LiBS) from [Language-Informed Beam Search Decoding for Multilingual Machine Translation]().
+This repo has the implementation of Language-informed Beam Search (LiBS) from [Language-Informed Beam Search Decoding for Multilingual Machine Translation]().
 
-This repo has a re-implementation of [Improving Multilingual Translation by Representation and Gradient Regularization](https://arxiv.org/abs/2109.04778) on the new [Fairseq](https://github.com/pytorch/fairseq) codebase. 
+This repo also has a re-implementation of [Improving Multilingual Translation by Representation and Gradient Regularization](https://arxiv.org/abs/2109.04778) on the new [Fairseq](https://github.com/pytorch/fairseq) codebase. 
 Compared to my old codebase, this version is significantly faster while results (i.e. BLEU score) are largely the same.
 
 This release includes:

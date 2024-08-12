@@ -1,5 +1,3 @@
-# Improving Multilingual Translation by Representation and Gradient Regularization
-
 ## Introduction
 This repo has the implementation of Language-informed Beam Search (LiBS) from [Language-Informed Beam Search Decoding for Multilingual Machine Translation]().
 
